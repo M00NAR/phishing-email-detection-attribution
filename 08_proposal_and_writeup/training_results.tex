@@ -1,0 +1,163 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue}
+
+\title{\textbf{Model Training Results}\\[2pt]\large Detection and Attribution of AI-Generated and Human Written
+Phishing Emails from Legitimate Emails}
+\author{Mannan Bhardwaj -- 25BYB0013 \\ Bhoumik Singh Rajput -- 25BYB0120 \\[4pt]
+School of Computer Science Engineering and Information Systems}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+This is the first run of the full pipeline end to end: real feature extraction (not proxy features),
+real statistical gating on the extracted values, parameter locking, and evaluation on the independent
+holdout set. Two findings from this run contradict earlier, proxy-feature-based claims and are reported
+here rather than quietly corrected.
+
+\section{Feature Extraction -- what was actually used}
+All 20 features were computed with real tooling, not approximations: spaCy (\texttt{en\_core\_web\_sm})
+for dependency parsing and POS tagging, a from-scratch trigram language model (stupid backoff) trained
+once on the training set's own text for token-predictability features, VADER for sentence-level
+sentiment, and \texttt{pyspellchecker} for orthographic error detection. A pretrained transformer
+language model was considered for the token log-probability feature and rejected: it was unreachable
+from this environment (no route to download pretrained weights), and a heavy black-box model would also
+cut against the project's own stated design goal of a lightweight, fully auditable pipeline. Email text
+is capped at 6{,}000 characters before parser/tokenizer-based features run, since a handful of extreme
+outliers (up to 31{,}396 words, almost certainly mbox-thread artifacts) would otherwise dominate runtime
+for no signal benefit.
+
+\section{Statistical Gating -- real results}
+Kruskal-Wallis, Mann-Whitney U, Chi-Square, and joint Benjamini-Hochberg FDR correction were re-run on
+the real extracted values (Section~3 methodology, unchanged). Table~\ref{tab:gate} summarizes the
+outcome.
+
+\renewcommand{\arraystretch}{1.25}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrrcrrc@{}}
+\toprule
+& \multicolumn{3}{c}{\textbf{Main (3-group)}} & \multicolumn{3}{c}{\textbf{Attribution (2-group)}} \\
+\textbf{Feature} & adj.\ $p$ & effect & gate & adj.\ $p$ & effect & gate \\
+\midrule
+avg\_token\_logprob            & $\approx\!0$ & 0.956 & \checkmark & $\approx\!0$ & $-$0.956 & \checkmark \\
+sentence\_perplexity\_variance & $\approx\!0$ & 1.251 & \checkmark & $\approx\!0$ & 0.835    & \checkmark \\
+sentence\_length\_std          & $\approx\!0$ & 0.630 & \checkmark & $\approx\!0$ & 0.263    & \checkmark \\
+max\_parse\_depth              & $\approx\!0$ & 0.637 & \checkmark & $\approx\!0$ & $-$0.637 & \checkmark \\
+paragraph\_density             & $\approx\!0$ & 3.150 & \checkmark & $\approx\!0$ & $-$3.150 & \checkmark \\
+clause\_density                & $\approx\!0$ & 0.405 & \checkmark & $\approx\!0$ & $-$0.405 & \checkmark \\
+orthographic\_error\_density   & $\approx\!0$ & 1.431 & \checkmark & 0.0099 & 0.406 & \checkmark \\
+punctuation\_entropy           & $\approx\!0$ & 0.889 & \checkmark & $\approx\!0$ & $-$0.541 & \checkmark \\
+urgency\_density               & $\approx\!0$ & 1.325 & \checkmark & $\approx\!0$ & $-$0.042 & fails \\
+pronoun\_balance               & $\approx\!0$ & 0.992 & \checkmark & $\approx\!0$ & $-$0.044 & fails \\
+sentiment\_variance            & $\approx\!0$ & 0.713 & \checkmark & $\approx\!0$ & $-$0.631 & \checkmark \\
+imperative\_density            & $\approx\!0$ & 0.225 & \checkmark & $\approx\!0$ & 0.225    & \checkmark \\
+lexical\_diversity             & $\approx\!0$ & 0.514 & \checkmark & $\approx\!0$ & $-$0.395 & \checkmark \\
+pronoun\_density               & $\approx\!0$ & 0.969 & \checkmark & $\approx\!0$ & $-$0.354 & \checkmark \\
+generic\_greeting\_flag        & $\approx\!0$ & 0.411 & \checkmark & $\approx\!0$ & 0.240 & \checkmark \\
+subject\_refw\_flag            & $\approx\!0$ & 0.511 & \checkmark & $\approx\!0$ & 0.158 & \checkmark \\
+attachment\_mention\_flag      & $\approx\!0$ & 0.168 & \checkmark & $\approx\!0$ & 0.120 & \checkmark \\
+bracketed\_cta\_flag           & $\approx\!0$ & 0.377 & \checkmark & 0.0004 & 0.065 & fails \\
+sensitive\_info\_flag          & $\approx\!0$ & 0.306 & \checkmark & $\approx\!0$ & 0.175 & \checkmark \\
+threat\_clause\_flag           & $\approx\!0$ & 0.168 & \checkmark & 0.0055 & 0.051 & fails \\
+\bottomrule
+\end{tabular}
+\caption{Dual-gate results on real extracted features (adjusted $p<0.05$ \textbf{and} effect size at or
+above threshold: $|d|\geq0.20$ continuous, $V\geq0.10$ categorical). Effect-size sign for the attribution
+column indicates direction (which class scores higher), not magnitude -- the gate itself is applied to
+the absolute value.}
+\label{tab:gate}
+\end{table}
+
+\textbf{All 20 of 20 features clear the main gate}; \textbf{16 of 20 clear the attribution gate}
+(urgency\_density, pronoun\_balance, bracketed\_cta\_flag, and threat\_clause\_flag do not -- each is
+statistically significant purely from sample size, but too small an effect to usefully separate
+Human-Phishing from AI-Phishing).
+
+\subsection*{A claim this contradicts}
+\texttt{proposal.tex} currently describes imperative verb density as ``the single strongest attribution
+signal in our feature set.'' Measured against real extracted data, it is not: its attribution effect size
+($d=0.225$) is one of the smallest that still clears the gate, while \texttt{paragraph\_density}
+($d=3.15$), \texttt{avg\_token\_logprob} ($d=0.96$), and \texttt{sentence\_perplexity\_variance}
+($d=0.84$) are all substantially larger. The proposal's claim was based on an earlier qualitative
+expectation, not this measurement, and should be corrected before the paper is finalized.
+
+\subsection*{A result worth treating with suspicion, not celebration}
+\texttt{paragraph\_density}'s effect size ($d=3.15$) is far larger than any other feature's -- large
+enough to be a red flag rather than good news. The three classes come from three different raw
+sources with three different formatting conventions (Nazario phishing text, raw Enron plain-text email,
+and LLM-generated output), so a feature this strongly separated is more likely picking up a
+corpus-formatting artifact (how each source happens to insert paragraph breaks) than a genuine
+linguistic signal that would generalize to phishing emails collected a different way. This is the same
+category of caveat already on record for other features (the corpus-era markers in the Legitimate class,
+the AI-Phishing corpus's 0\% exclamation marks). It is flagged here rather than presented as a strong
+result.
+
+\section{Parameter Locking -- two pipelines, not one}
+A design decision was required that the proposal's equations did not fully pin down: whether Step 2
+(attribution) reuses the same 3-class posterior as Step 1, or is a separately trained model restricted to
+phishing-only data and the attribution-gate feature subset. The abstract's own wording -- ``a dedicated
+attribution-specific feature subset'' -- only makes sense as a separate model, since several main-gate
+features (urgency\_density, pronoun\_balance) do not actually hold up for attribution. \textbf{Two
+pipelines were therefore built}: a 3-class \emph{main pipeline} (Legitimate / Human-Phishing /
+AI-Phishing, 20 features) for Step 1, and a 2-class \emph{attribution pipeline} (Human-Phishing /
+AI-Phishing, trained only on phishing rows, 16 features) for Step 2.
+
+Two other open parameters were fixed: \textbf{8 quantile bins} for the Rank-Binned NB (a middle ground
+for roughly 1{,}497 training rows per class), and the Meta-NB combination was implemented as
+$P_{\text{meta}}(C_k) \propto P_1(C_k)\cdot P_2(C_k) \,/\, P(C_k)$, renormalized over $k$ -- the
+self-consistent form of Eq.~9 once $P(P_m\mid C_k)$ is read as $P_m(C_k)/P(C_k)$, which avoids
+triple-counting the class prior (each sub-model's own posterior already carries one copy of it).
+
+\section{Evaluation on the Holdout Set}
+This is the real generalization test: the holdout set's Legitimate rows are overwhelmingly raw Enron
+email (4{,}934 of 4{,}976), not the Nazario-legit mix the model trained on -- deliberately the harder
+test. Human-Phishing holdout rows are few (42), a direct consequence of the earlier balancing step, so
+that side of the attribution table is noisier than the AI-Phishing side.
+
+\renewcommand{\arraystretch}{1.4}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{4.0cm}p{1.8cm}p{2.9cm}p{5.6cm}@{}}
+\toprule
+\textbf{Stage} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} \\
+\midrule
+Step 1 (Legitimate vs.\ Phishing) & 0.854 & 0.776 (Phishing) & 0.915 (Phishing) \\
+Step 2 (Attribution, true-phishing rows only) & 0.865 & -- & 0.952 (Human-Phishing, $n{=}42$) / 0.863 (AI-Phishing, $n{=}3489$) \\
+End-to-end 3-class & 0.817 & -- & -- \\
+\bottomrule
+\end{tabular}
+\caption{Holdout evaluation. Step 2 is scored by running the attribution model directly on every
+true-phishing row, independent of whether Step 1 actually flagged that row as phishing, so Step 1's
+errors cannot contaminate this number.}
+\end{table}
+
+Step 1's false-positive rate on Legitimate email is 18.9\% (934 of 4{,}934 raw Enron emails flagged as
+phishing) -- notably worse than the 99.4\% accuracy of the earlier TF-IDF + Logistic Regression sanity
+baseline from the data-validation stage. This gap is expected and informative, not a bug: the baseline
+sees the full vocabulary of every email, while this pipeline deliberately restricts itself to 20
+interpretable statistical features. The gap is the real, measured cost of that interpretability
+constraint, and should be reported as such in the paper rather than compared directly against the
+baseline's number without this context.
+
+\section{Open Items}
+\begin{enumerate}
+\item \texttt{proposal.tex} needs correcting on the imperative-density claim above, and updating from
+14 to 20 features (Section 2.1), which was already outstanding.
+\item The large \texttt{paragraph\_density} effect size should be investigated further before being
+reported as a finding -- specifically, whether it survives when tested only within a single raw source
+per class rather than across sources.
+\item The two-pipeline architecture decision (Section~4 above) should be reviewed and either confirmed
+or revised, since it is this report's reading of an ambiguous part of the proposal, not something the
+proposal stated outright.
+\end{enumerate}
+
+\end{document}

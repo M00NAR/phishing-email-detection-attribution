@@ -1,0 +1,53 @@
+{
+  "step1": {
+    "accuracy": 0.8667454223272297,
+    "fpr": 0.2168625861370085,
+    "precision": 0.764472815320273,
+    "recall": 0.9835740583404134,
+    "f1": 0.8602922962595987,
+    "confusion_matrix": {
+      "Legitimate": {
+        "Legitimate": 3864,
+        "Phishing": 58
+      },
+      "Phishing": {
+        "Legitimate": 1070,
+        "Phishing": 3473
+      }
+    }
+  },
+  "step2": {
+    "accuracy": 0.9832908524497309,
+    "confusion_matrix": {
+      "Human-Phishing": {
+        "Human-Phishing": 42,
+        "AI-Phishing": 59
+      },
+      "AI-Phishing": {
+        "Human-Phishing": 0,
+        "AI-Phishing": 3430
+      }
+    }
+  },
+  "end_to_end": {
+    "accuracy": 0.8607206142941524,
+    "confusion_matrix": {
+      "Legitimate": {
+        "Legitimate": 3864,
+        "Human-Phishing": 0,
+        "AI-Phishing": 58
+      },
+      "Human-Phishing": {
+        "Legitimate": 1054,
+        "Human-Phishing": 42,
+        "AI-Phishing": 51
+      },
+      "AI-Phishing": {
+        "Legitimate": 16,
+        "Human-Phishing": 0,
+        "AI-Phishing": 3380
+      }
+    }
+  },
+  "reproducibility_check_passed": true
+}

@@ -1,0 +1,141 @@
+{
+  "nazario_shape": [
+    3065,
+    13
+  ],
+  "nazario_class_balance": {
+    "Phishing": 1565,
+    "Legitimate": 1500
+  },
+  "nazario_missing": {
+    "sender": 2,
+    "receiver": 113,
+    "date": 3,
+    "subject": 50,
+    "body": 0,
+    "label": 0,
+    "urls": 0,
+    "label_name": 0,
+    "word_count": 0,
+    "char_count": 0,
+    "subject_len": 0,
+    "sender_domain": 32,
+    "urls_schema": 0
+  },
+  "nazario_urls_schema_by_class": {
+    "flag(0/1)": {
+      "Legitimate": 0,
+      "Phishing": 1565
+    },
+    "list": {
+      "Legitimate": 1500,
+      "Phishing": 0
+    }
+  },
+  "nazario_word_count_by_class": {
+    "count": {
+      "Legitimate": 1500.0,
+      "Phishing": 1565.0
+    },
+    "mean": {
+      "Legitimate": 321.1326666666667,
+      "Phishing": 268.50031948881787
+    },
+    "std": {
+      "Legitimate": 602.7055746709017,
+      "Phishing": 3422.177223214878
+    },
+    "min": {
+      "Legitimate": 3.0,
+      "Phishing": 0.0
+    },
+    "25%": {
+      "Legitimate": 79.0,
+      "Phishing": 57.0
+    },
+    "50%": {
+      "Legitimate": 157.0,
+      "Phishing": 104.0
+    },
+    "75%": {
+      "Legitimate": 313.0,
+      "Phishing": 180.0
+    },
+    "max": {
+      "Legitimate": 7016.0,
+      "Phishing": 127119.0
+    }
+  },
+  "nazario_top_domains_legit": {
+    "enron.com": 223,
+    "gmail.com": 56,
+    "samba.org": 38,
+    "parrotcode.org": 28,
+    "groucho.cse.psu.edu": 27,
+    "2ubh.com": 27,
+    "issues.apache.org": 24,
+    "gl.umbc.edu": 22,
+    "mail.cnn.com": 21,
+    "users.sourceforge.net": 21
+  },
+  "nazario_top_domains_phish": {
+    "monkey.org": 42,
+    "approject.com": 33,
+    "gmail.com": 14,
+    "support.com": 14,
+    "wetransfer.com": 13,
+    "mail.com": 12,
+    "standardbank.co.za": 12,
+    "absa.co.za": 12,
+    "mailsender.com": 10,
+    "cox.net": 9
+  },
+  "nazario_legit_enron_share": 0.14866666666666667,
+  "enron_shape": [
+    5000,
+    6
+  ],
+  "enron_word_count_desc": {
+    "count": 5000.0,
+    "mean": 262.9006,
+    "std": 908.6773042220663,
+    "min": 1.0,
+    "25%": 43.0,
+    "50%": 112.5,
+    "75%": 250.0,
+    "max": 31396.0
+  },
+  "enron_missing_body": 0,
+  "overlap_message_ids": 0,
+  "naz_legit_with_msgid": 15,
+  "enron_with_msgid": 5000,
+  "task_d": [
+    {
+      "eval_llm": "deepseek3.2",
+      "classifier": "xgboost",
+      "accuracy": 0.9962,
+      "precision": 0.994,
+      "recall": 1.0,
+      "f1": 0.997,
+      "auc": 0.9998
+    },
+    {
+      "eval_llm": "gpt-4.1",
+      "classifier": "xgboost",
+      "accuracy": 0.9962,
+      "precision": 0.994,
+      "recall": 1.0,
+      "f1": 0.997,
+      "auc": 0.9999
+    },
+    {
+      "eval_llm": "llama-3.3-70b",
+      "classifier": "xgboost",
+      "accuracy": 0.9962,
+      "precision": 0.994,
+      "recall": 1.0,
+      "f1": 0.997,
+      "auc": 0.9998
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "step1": {
+    "accuracy": 0.6545853000674309,
+    "fpr": 0.2168625861370085,
+    "confusion_matrix": {
+      "Legitimate": {
+        "Legitimate": 3864,
+        "Phishing": 3028
+      },
+      "Phishing": {
+        "Legitimate": 1070,
+        "Phishing": 3902
+      }
+    }
+  },
+  "step2": {
+    "accuracy": 0.976046176046176,
+    "confusion_matrix": {
+      "Human-Phishing": {
+        "Human-Phishing": 3334,
+        "AI-Phishing": 59
+      },
+      "AI-Phishing": {
+        "Human-Phishing": 107,
+        "AI-Phishing": 3430
+      }
+    },
+    "human_phishing_recall": {
+      "mean": 0.968904388259227,
+      "ci95": [
+        0.962801511188608,
+        0.974716652136007
+      ],
+      "n": 3441
+    },
+    "ai_phishing_recall": {
+      "mean": 0.9830897105187733,
+      "ci95": [
+        0.9787904843794784,
+        0.9871023215821152
+      ],
+      "n": 3489
+    }
+  },
+  "end_to_end": {
+    "accuracy": 0.6498651382333108,
+    "confusion_matrix": {
+      "Legitimate": {
+        "Legitimate": 3864,
+        "Human-Phishing": 2970,
+        "AI-Phishing": 58
+      },
+      "Human-Phishing": {
+        "Legitimate": 1054,
+        "Human-Phishing": 466,
+        "AI-Phishing": 51
+      },
+      "AI-Phishing": {
+        "Legitimate": 16,
+        "Human-Phishing": 5,
+        "AI-Phishing": 3380
+      }
+    }
+  }
+}

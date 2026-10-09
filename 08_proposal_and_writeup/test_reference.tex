@@ -1,0 +1,385 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black}
+
+\titleformat{\section}{\normalfont\Large\bfseries\color{blue!35!black}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{blue!25!black}}{\thesubsection}{0.6em}{}
+
+\newcommand{\purpose}[1]{\par\noindent\textbf{Purpose:} #1\par}
+\newcommand{\whenrun}[1]{\par\noindent\textbf{When it runs:} #1\par}
+\newcommand{\decision}[1]{\par\noindent\textbf{Decision rule:} #1\par}
+
+\title{\textbf{Statistical Testing \& Classification Reference}\\[4pt]
+\large Updated Pipeline --- Detection and Attribution of AI-Generated and\\
+Human-Written Phishing Emails}
+\author{Mannan Bhardwaj (25BYB0013) \and Bhoumik Singh Rajput (25BYB0120)}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Scope of This Document}
+This document explains every statistical test and classification model in the \emph{current} version
+of the pipeline --- the version with the normality-testing branch removed (Kruskal--Wallis is used for
+all continuous features, unconditionally) and the two-group Chi-Square test added for categorical
+attribution features. It does not describe earlier design iterations. For each test: what it does, when
+it runs, its formula, a fully worked numeric example, and how to read the result. The last section walks
+one example email through the entire pipeline end to end.
+
+\section{Quick Reference}
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{2.7cm}p{4.3cm}p{3.3cm}p{2.6cm}}
+\toprule
+\textbf{Name} & \textbf{Purpose} & \textbf{Feature type} & \textbf{Runs on} \\
+\midrule
+Kruskal--Wallis $H$ & Does a feature differ across the 3 classes? & Continuous & Legit / Human / AI \\
+Chi-Square (3-group) & Does a flag depend on class? & Categorical & Legit / Human / AI \\
+Mann--Whitney $U$ & Does a feature separate the two phishing types? & Continuous & Human vs.\ AI only \\
+Chi-Square (2-group) & Does a flag separate the two phishing types? & Categorical & Human vs.\ AI only \\
+Benjamini--Hochberg FDR & Corrects all $p$-values for multiple testing & All & --- \\
+Cohen's $d$ & How large is a continuous difference, really? & Continuous & --- \\
+Cram\'er's $V$ & How strong is a categorical association, really? & Categorical & --- \\
+\midrule
+Model 1: Rank-Binned NB & Classifies using verified continuous features & Continuous & Every new email \\
+Model 2: Categorical NB & Classifies using verified categorical features & Categorical & Every new email \\
+Meta-Naive Bayes & Combines Model 1 \& Model 2 into one verdict & --- & Every new email \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The first seven rows run \textbf{once}, during training, to decide which features are trustworthy.
+The last three rows run \textbf{every time} a new email needs to be classified, and never involve a
+hypothesis test or a $p$-value.
+
+\section{Phase 1: Feature-Selection Tests}
+These four tests are run once on the training set. Each produces a $p$-value per feature; none of them
+ever run again once the feature list is locked.
+
+\subsection{Kruskal--Wallis $H$ Test}
+\purpose{Tests whether a continuous feature's values differ across the three classes (Legitimate,
+Human-Phishing, AI-Phishing), without assuming the data is normally distributed.}
+\whenrun{On every continuous feature, comparing all three classes at once.}
+
+\[
+H = \frac{12}{N(N+1)} \sum_{j=1}^{k} \frac{R_j^2}{n_j} - 3(N+1)
+\]
+where $N$ is the total sample size, $k$ is the number of classes, $R_j$ is the sum of ranks in class
+$j$, and $n_j$ is the size of class $j$.
+
+\paragraph{Worked example --- feature: sentence perplexity variance (``burstiness'').}
+Four emails sampled from each class:
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+Legitimate & 2 & 3 & 4 & 5 & \\
+Human-Phishing & 9 & 10 & 11 & 12 & \\
+AI-Phishing & 5 & 6 & 7 & 8 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Pool all 12 values and rank them 1 (lowest) to 12 (highest). The value 5 appears twice (once in
+Legitimate, once in AI-Phishing), so both instances share the average of ranks 4 and 5, i.e., rank 4.5.
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Class & Ranks & \multicolumn{2}{c}{Rank sum $R_j$} \\
+\midrule
+Legitimate & 1, 2, 3, 4.5 & \multicolumn{2}{c}{$R_1 = 10.5$} \\
+Human-Phishing & 9, 10, 11, 12 & \multicolumn{2}{c}{$R_2 = 42$} \\
+AI-Phishing & 4.5, 6, 7, 8 & \multicolumn{2}{c}{$R_3 = 25.5$} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+With $N=12$, $k=3$, $n_j=4$ for every class:
+\[
+H = \frac{12}{12 \times 13}\left(\frac{10.5^2}{4}+\frac{42^2}{4}+\frac{25.5^2}{4}\right) - 3(13)
+= 0.0769 \times 631.125 - 39 \approx 9.55
+\]
+\decision{Compare $H$ to a chi-square distribution with $k-1=2$ degrees of freedom. The critical value
+at $p=0.05$ is $5.99$. Since $9.55 > 5.99$, the difference is statistically significant --- burstiness
+genuinely differs across the three classes, and the feature proceeds to the FDR/effect-size check.}
+
+\subsection{Chi-Square Test (Three-Group)}
+\purpose{Tests whether a categorical (yes/no) feature is associated with class membership.}
+\whenrun{On every categorical/flag feature, comparing all three classes at once.}
+
+\[
+\chi^2 = \sum_{i=1}^{r}\sum_{j=1}^{c} \frac{(O_{ij}-E_{ij})^2}{E_{ij}}
+\]
+where $O_{ij}$ is the observed count in cell $(i,j)$ and $E_{ij} = \dfrac{\text{row total} \times
+\text{column total}}{\text{grand total}}$ is the count expected if the feature were unrelated to class.
+
+\paragraph{Worked example --- feature: contains an urgency keyword (Yes/No), 100 emails per class.}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & Yes & No & Total \\
+\midrule
+Legitimate & 10 & 90 & 100 \\
+Human-Phishing & 70 & 30 & 100 \\
+AI-Phishing & 55 & 45 & 100 \\
+\midrule
+Total & 135 & 165 & 300 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Expected count per cell (e.g., Legitimate/Yes) $=\frac{135\times100}{300}=45$; every class's expected
+Yes/No split is $45/55$ since class is assumed irrelevant. Summing $(O-E)^2/E$ over all six cells gives
+$\chi^2 \approx 78.8$.
+\decision{With $\mathrm{df}=(3-1)(2-1)=2$, the critical value at $p=0.05$ is $5.99$. $78.8 \gg 5.99$:
+urgency-keyword usage is strongly tied to class.}
+
+\subsection{Mann--Whitney $U$ Test (Attribution)}
+\purpose{Tests whether a continuous feature separates AI-Phishing from Human-Phishing specifically ---
+a different, narrower question than the three-group tests above.}
+\whenrun{On every continuous feature, restricted to the phishing-only subset (Human-Phishing vs.\
+AI-Phishing).}
+
+\[
+U = n_1 n_2 + \frac{n_1(n_1+1)}{2} - R_1
+\]
+
+\paragraph{Worked example --- feature: urgency-keyword count per email.}
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+Human-Phishing & 6 & 7 & 8 & 9 & 10 \\
+AI-Phishing & 2 & 3 & 3 & 4 & 5 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Pooling and ranking all 10 values (the tied pair of 3's each take the average rank 2.5): Human-Phishing
+ranks are $6,7,8,9,10 \to R_1=40$; AI-Phishing ranks are $1,2.5,2.5,4,5 \to R_2=15$.
+\[
+U = (5)(5) + \frac{5(6)}{2} - 40 = 25+15-40 = 0
+\]
+\decision{$U$ ranges from $0$ (complete separation) to $n_1 n_2=25$ (complete overlap). $U=0$ here means
+every Human-Phishing email outranked every AI-Phishing email on this feature --- the strongest possible
+signal, and a very small $p$-value.}
+
+\subsection{Chi-Square Test (Two-Group, Attribution)}
+\purpose{The categorical counterpart to Mann--Whitney $U$: tests whether a categorical/flag feature
+separates AI-Phishing from Human-Phishing specifically.}
+\whenrun{On every categorical feature, restricted to the phishing-only subset.}
+
+Same formula as Section 2.2, but with only two classes (rows) instead of three.
+
+\paragraph{Worked example --- feature: contains a suspicious link (Yes/No), 100 emails per phishing type.}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & Yes & No & Total \\
+\midrule
+Human-Phishing & 60 & 40 & 100 \\
+AI-Phishing & 25 & 75 & 100 \\
+\midrule
+Total & 85 & 115 & 200 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Expected Yes per group $=\frac{85\times100}{200}=42.5$; expected No $=57.5$. Summing $(O-E)^2/E$ over all
+four cells gives $\chi^2 \approx 25.08$.
+\decision{With $\mathrm{df}=1$, the critical value at $p=0.05$ is $3.84$. $25.08 \gg 3.84$: link
+presence is strongly tied to \emph{which type} of phishing an email is, not just whether it's phishing
+at all.}
+
+\section{Multiple-Testing Correction and Effect Size}
+Every test above only tells you whether a difference is \emph{probably real}. These two checks decide
+whether it is \emph{real and worth keeping}.
+
+\subsection{Benjamini--Hochberg FDR Correction}
+\purpose{When many features are tested at once, some will look ``significant'' by pure chance. This
+correction controls the expected proportion of false positives among everything ultimately kept.}
+\whenrun{Once, across every raw $p$-value produced by every test above, jointly.}
+
+\[
+P_{(i)} \leq \frac{i}{m}\,Q \qquad (Q = 0.05)
+\]
+Sort all $m$ p-values ascending and rank them $i=1,\dots,m$. Find the largest $i$ whose $p$-value is
+still below its own threshold $\frac{i}{m}Q$; keep every feature ranked at or below that $i$.
+
+\paragraph{Worked example --- 10 features tested.}
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+Rank $i$ & $p$-value & Threshold $\frac{i}{10}(0.05)$ & Passes? \\
+\midrule
+1 & 0.001 & 0.005 & \checkmark \\
+2 & 0.004 & 0.010 & \checkmark \\
+3 & 0.006 & 0.015 & \checkmark \\
+4 & 0.011 & 0.020 & \checkmark \\
+5 & 0.019 & 0.025 & \checkmark \\
+6 & 0.022 & 0.030 & \checkmark \\
+7 & 0.030 & 0.035 & \checkmark \\
+8 & 0.040 & 0.040 & \checkmark \\
+9 & 0.060 & 0.045 & $\times$ \\
+10 & 0.080 & 0.050 & $\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\decision{The largest passing rank is 8, so features ranked 1--8 are kept; ranks 9--10 are discarded,
+even though a naive uncorrected 0.05 cutoff would have kept more of them.}
+
+\subsection{Cohen's $d$}
+\purpose{Measures how large a continuous feature's difference between two groups actually is, in
+standardized units --- protects against large sample sizes making trivial differences look
+``significant.''}
+\whenrun{On every continuous feature that passed its p-value test, for every pairwise comparison
+needed.}
+
+\[
+d = \frac{\bar{x}_1-\bar{x}_2}{s_{\text{pooled}}}, \qquad
+s_{\text{pooled}} = \sqrt{\frac{(n_1-1)s_1^2+(n_2-1)s_2^2}{n_1+n_2-2}}
+\]
+Rule of thumb: $|d|\approx0.2$ small, $0.5$ medium, $0.8$ large. This pipeline requires $|d|\geq0.20$.
+
+\paragraph{Worked example --- feature: average sentence length.}
+Legitimate: $12,14,13,15,16$ (mean $14$); Phishing: $15,17,16,14,18$ (mean $16$). Both groups have
+standard deviation $\approx1.58$, so pooled std $\approx1.58$.
+\[
+d = \frac{16-14}{1.58} \approx 1.27
+\]
+\decision{$1.27$ is a large effect --- Phishing emails use noticeably longer sentences than Legitimate
+ones, not just detectably-but-trivially longer ones.}
+
+\subsection{Cram\'er's $V$}
+\purpose{The categorical counterpart to Cohen's $d$: measures how strong a categorical association
+actually is, on a $0$-to-$1$ scale.}
+\whenrun{On every categorical feature that passed its p-value test.}
+
+\[
+V = \sqrt{\frac{\chi^2}{n\times(\min(\text{rows,cols})-1)}}
+\]
+Rule of thumb (1 degree of freedom): $V\approx0.1$ weak, $0.3$ moderate, $0.5+$ strong.
+
+\paragraph{Worked example --- reusing the suspicious-link feature from Section 2.4 ($\chi^2=25.08$,
+$n=200$, $\mathrm{df}=1$).}
+\[
+V = \sqrt{\frac{25.08}{200\times1}} = \sqrt{0.1254} \approx 0.354
+\]
+\decision{A moderate-to-strong association --- link presence is a genuinely useful attribution signal,
+not just a statistical technicality.}
+
+\section{Phase 2: Classification Models}
+\textbf{These are not hypothesis tests and do not produce $p$-values.} They run for every new email,
+using only the parameters (bin edges, frequency tables, class priors) that Phase 1 already computed and
+locked. Nothing here is recalculated per email.
+
+\subsection{Model 1: Rank-Binned Naive Bayes}
+\purpose{Classifies using continuous features that survived Kruskal--Wallis, by binning each feature's
+value into intervals (e.g., Low/Medium/High) and looking up how often each class historically fell into
+that bin.}
+
+\[
+P(x_i \in \text{Bin}_b \mid C_k) = \frac{N_{b,k}+\alpha}{N_k+\alpha B}, \qquad \alpha = 1 \text{ (Laplace smoothing)}
+\]
+
+\paragraph{Worked example --- feature: burstiness, using training counts (1{,}000 emails/class).}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & Low & Medium & High \\
+\midrule
+Legitimate & 700 & 250 & 50 \\
+Human-Phishing & 200 & 400 & 400 \\
+AI-Phishing & 650 & 300 & 50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+A new test email's burstiness falls in the \textbf{High} bin:
+\[
+P(\text{High}\mid\text{Legit})=\frac{51}{1003}\approx0.051,\quad
+P(\text{High}\mid\text{Human})=\frac{401}{1003}\approx0.400,\quad
+P(\text{High}\mid\text{AI})=\frac{51}{1003}\approx0.051
+\]
+
+\subsection{Model 2: Categorical Naive Bayes}
+\purpose{Classifies using categorical features that survived Chi-Square, by looking up how often each
+class historically showed that category value.}
+
+\[
+P(x_i=v\mid C_k) = \frac{\text{Count}(x_i=v \text{ in } C_k)+\alpha}{\text{Total in } C_k+\alpha K}
+\]
+
+\paragraph{Worked example --- feature: urgency keyword present (Yes/No), 1{,}000 emails/class.}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+ & Yes & No \\
+\midrule
+Legitimate & 50 & 950 \\
+Human-Phishing & 700 & 300 \\
+AI-Phishing & 550 & 450 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The same test email contains an urgency keyword (\textbf{Yes}):
+\[
+P(\text{Yes}\mid\text{Legit})\approx0.051,\quad P(\text{Yes}\mid\text{Human})\approx0.700,\quad
+P(\text{Yes}\mid\text{AI})\approx0.550
+\]
+
+\subsection{Meta-Naive Bayes Probability Combiner}
+\purpose{Combines Model 1's and Model 2's independent judgments into one final probability per class,
+using Bayes' theorem --- not a simple average, so confident agreement between the two models is
+amplified and disagreement is suppressed.}
+
+\[
+P(C_k \mid P_1,P_2) = \frac{P(C_k)\,P_1(C_k)\,P_2(C_k)}{\sum_j P(C_j)\,P_1(C_j)\,P_2(C_j)}
+\]
+
+With equal priors $P(C_k)=\tfrac{1}{3}$:
+\[
+\text{Legit: } \tfrac{1}{3}(0.051)(0.051)\approx0.00087 \quad
+\text{Human: } \tfrac{1}{3}(0.400)(0.700)\approx0.0933 \quad
+\text{AI: } \tfrac{1}{3}(0.051)(0.550)\approx0.00935
+\]
+Normalizing (dividing by the sum $\approx0.1035$):
+\[
+P(\text{Legit})\approx0.8\%, \qquad P(\text{Human})\approx90.2\%, \qquad P(\text{AI})\approx9.0\%
+\]
+
+\subsection{Final Two-Step Decision Rule}
+\textbf{Step 1 (Legitimate vs.\ Phishing):}
+\[
+P(\text{Phishing}) = P(\text{Human})+P(\text{AI}) = 90.2\%+9.0\% = 99.2\% \;(\geq 0.50 \Rightarrow \text{Phishing})
+\]
+\textbf{Step 2 (Human vs.\ AI, only if Phishing):}
+\[
+P(\text{AI}\mid\text{Phishing}) = \frac{9.0}{9.0+90.2} \approx 9.1\% \;(< 0.50 \Rightarrow \text{Human-Written})
+\]
+
+\section{End-to-End Summary}
+One email, carried through every stage of the current pipeline:
+
+\begin{enumerate}[leftmargin=1.4cm]
+\item \textbf{Training time (once):} Kruskal--Wallis confirmed burstiness differs across classes
+($H\approx9.55$); Chi-Square confirmed urgency-keyword use differs across classes ($\chi^2\approx78.8$).
+Both passed FDR correction and their effect-size checks, so both were locked into the selected feature
+set along with their trained bin edges / frequency tables.
+\item \textbf{New email arrives:} its burstiness value lands in the \emph{High} bin; it contains an
+urgency keyword.
+\item \textbf{Classification:} Model 1 (Rank-Binned NB) and Model 2 (Categorical NB) independently score
+the email against the stored training statistics; Meta-Naive Bayes combines both scores.
+\item \textbf{Decision:} $P(\text{Phishing})=99.2\%\Rightarrow$ Phishing; $P(\text{AI}\mid\text{Phishing})
+\approx9.1\%\Rightarrow$ \textbf{Human-Written}.
+\end{enumerate}
+
+Every number in this final verdict traces back to a specific, auditable test result from Phase 1 and a
+specific, auditable probability lookup from Phase 2 --- which is exactly the ``full auditability''
+property the pipeline is designed around.
+
+\end{document}

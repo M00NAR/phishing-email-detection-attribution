@@ -1,0 +1,56 @@
+{
+  "continuous_main": [
+    "avg_token_logprob",
+    "avg_word_length",
+    "clause_density",
+    "imperative_density",
+    "lexical_diversity",
+    "log_word_count",
+    "max_parse_depth",
+    "orthographic_error_density",
+    "paragraph_density",
+    "pronoun_balance",
+    "pronoun_density",
+    "punctuation_entropy",
+    "sentence_length_std",
+    "sentence_perplexity_variance",
+    "sentiment_variance",
+    "urgency_density"
+  ],
+  "continuous_attribution": [
+    "avg_token_logprob",
+    "avg_word_length",
+    "clause_density",
+    "imperative_density",
+    "lexical_diversity",
+    "log_word_count",
+    "max_parse_depth",
+    "orthographic_error_density",
+    "paragraph_density",
+    "pronoun_density",
+    "punctuation_entropy",
+    "sentence_length_std",
+    "sentence_perplexity_variance",
+    "sentiment_variance"
+  ],
+  "categorical_main": [
+    "allcaps_word_flag",
+    "attachment_mention_flag",
+    "bracketed_cta_flag",
+    "generic_greeting_flag",
+    "multiple_urls_flag",
+    "quoted_reply_flag",
+    "sensitive_info_flag",
+    "signoff_flag",
+    "subject_refw_flag",
+    "threat_clause_flag"
+  ],
+  "categorical_attribution": [
+    "allcaps_word_flag",
+    "attachment_mention_flag",
+    "generic_greeting_flag",
+    "sensitive_info_flag",
+    "signoff_flag",
+    "subject_refw_flag"
+  ]
+}

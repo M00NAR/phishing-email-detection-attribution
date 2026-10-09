@@ -1,0 +1,53 @@
+feature,track,task,test,statistic,effect_size,is_new,p_adj,significant,clears_gate
+avg_token_logprob,continuous,3-group,Kruskal-Wallis H,860.9664592807944,0.9559873515379845,False,4.78994925912779e-187,True,True
+sentence_perplexity_variance,continuous,3-group,Kruskal-Wallis H,1343.3979929334819,1.250849749868625,False,1.1132511917925158e-291,True,True
+sentence_length_std,continuous,3-group,Kruskal-Wallis H,551.9647553377993,0.6299799868803604,False,3.608690396277949e-120,True,True
+max_parse_depth,continuous,3-group,Kruskal-Wallis H,498.04411189030054,0.6365517460932908,False,1.5377556548304681e-108,True,True
+paragraph_density,continuous,3-group,Kruskal-Wallis H,2760.4598636113155,3.1504896488834304,False,0.0,True,True
+clause_density,continuous,3-group,Kruskal-Wallis H,290.63300496043104,0.40534926261146725,False,1.260950994971874e-63,True,True
+orthographic_error_density,continuous,3-group,Kruskal-Wallis H,1390.6322241713403,1.431194496155407,False,6.93366251774622e-302,True,True
+punctuation_entropy,continuous,3-group,Kruskal-Wallis H,717.9588482799824,0.8887415746695558,False,4.06537245407659e-156,True,True
+urgency_density,continuous,3-group,Kruskal-Wallis H,1276.2572113406775,1.3253223972002133,False,3.804268457433413e-277,True,True
+pronoun_balance,continuous,3-group,Kruskal-Wallis H,1698.7837815558498,0.9924356278304867,False,0.0,True,True
+sentiment_variance,continuous,3-group,Kruskal-Wallis H,521.5477045484278,0.713484542451238,False,1.3210997046472665e-113,True,True
+imperative_density,continuous,3-group,Kruskal-Wallis H,452.5751650540867,0.22460590719944912,False,1.060673163997066e-98,True,True
+lexical_diversity,continuous,3-group,Kruskal-Wallis H,225.77007550602943,0.5139043367977679,False,1.3625481465097906e-49,True,True
+pronoun_density,continuous,3-group,Kruskal-Wallis H,629.3366243781702,0.9686676150814543,False,6.3389777151729315e-137,True,True
+log_word_count,continuous,3-group,Kruskal-Wallis H,543.609836027728,0.8771871408852433,True,2.2408253107131446e-118,True,True
+avg_word_length,continuous,3-group,Kruskal-Wallis H,1440.5104048497942,1.6270370957182712,True,0.0,True,True
+avg_token_logprob,continuous,attribution,Mann-Whitney U,489895.0,-0.9559873515379845,False,4.06537245407659e-156,True,True
+sentence_perplexity_variance,continuous,attribution,Mann-Whitney U,1636176.0,0.8349830350037882,False,4.363835961361003e-105,True,True
+sentence_length_std,continuous,attribution,Mann-Whitney U,1253650.0,0.26250498183624,False,1.9949718637793723e-08,True,True
+max_parse_depth,continuous,attribution,Mann-Whitney U,658704.0,-0.6365517460932908,False,6.344381190267324e-87,True,True
+paragraph_density,continuous,attribution,Mann-Whitney U,47449.5,-3.1504896488834304,False,0.0,True,True
+clause_density,continuous,attribution,Mann-Whitney U,742197.0,-0.40534926261146725,False,1.9996323771483342e-57,True,True
+orthographic_error_density,continuous,attribution,Mann-Whitney U,1181482.0,0.40624680727031887,False,0.010044961212071038,True,True
+punctuation_entropy,continuous,attribution,Mann-Whitney U,863491.5,-0.5411024805102715,False,2.1408132121876385e-27,True,True
+urgency_density,continuous,attribution,Mann-Whitney U,683598.0,-0.041642223685099566,False,9.692832151554938e-91,True,False
+pronoun_balance,continuous,attribution,Mann-Whitney U,899752.5,-0.044024604819940964,False,1.1585118556836899e-20,True,False
+sentiment_variance,continuous,attribution,Mann-Whitney U,662414.0,-0.6310114550948541,False,2.3761736247223684e-83,True,True
+imperative_density,continuous,attribution,Mann-Whitney U,1493776.5,0.22460590719944912,False,1.9435189197734314e-76,True,True
+lexical_diversity,continuous,attribution,Mann-Whitney U,953693.5,-0.3946779688606792,False,2.018510511169613e-12,True,True
+pronoun_density,continuous,attribution,Mann-Whitney U,884612.5,-0.35370052350157866,False,2.5010678771774768e-23,True,True
+log_word_count,continuous,attribution,Mann-Whitney U,530983.5,-0.8771871408852433,True,1.0282481267466998e-136,True,True
+avg_word_length,continuous,attribution,Mann-Whitney U,594642.0,-0.6093410962698463,True,3.5407956611247097e-109,True,True
+generic_greeting_flag,categorical,3-group,Chi-Square,758.8756000205685,0.41106809190102717,False,6.055256408608465e-165,True,True
+subject_refw_flag,categorical,3-group,Chi-Square,1174.740732365307,0.5114456465548799,False,3.827381839479432e-255,True,True
+attachment_mention_flag,categorical,3-group,Chi-Square,127.38498936873124,0.1684176487905049,False,2.984838012857666e-28,True,True
+bracketed_cta_flag,categorical,3-group,Chi-Square,637.3795861626477,0.37672769416016977,False,1.2031945280588366e-138,True,True
+sensitive_info_flag,categorical,3-group,Chi-Square,421.0600364431324,0.3061966848399517,False,7.12220370356187e-92,True,True
+threat_clause_flag,categorical,3-group,Chi-Square,126.36850013507282,0.16774434491035423,False,4.834678385739848e-28,True,True
+quoted_reply_flag,categorical,3-group,Chi-Square,1473.3326512663261,0.5727681752700352,True,0.0,True,True
+signoff_flag,categorical,3-group,Chi-Square,3657.0229129941667,0.9023859258440765,True,0.0,True,True
+allcaps_word_flag,categorical,3-group,Chi-Square,242.19018036072143,0.2322238055667509,True,3.9227892427280023e-53,True,True
+multiple_urls_flag,categorical,3-group,Chi-Square,778.3392386156304,0.4163062539069067,True,3.8711660605697276e-169,True,True
+generic_greeting_flag,categorical,attribution,Chi-Square (2-group),172.7973398581957,0.2402385114231414,False,2.5470038932694194e-39,True,True
+subject_refw_flag,categorical,attribution,Chi-Square (2-group),74.88931825967798,0.15815540569725037,False,5.8837569901890444e-18,True,True
+attachment_mention_flag,categorical,attribution,Chi-Square (2-group),42.9499556421291,0.11977204417493,False,6.348315484858229e-11,True,True
+bracketed_cta_flag,categorical,attribution,Chi-Square (2-group),12.525977116484784,0.06468147409945359,False,0.0004259043702508305,True,False
+sensitive_info_flag,categorical,attribution,Chi-Square (2-group),92.02557447397564,0.1753187520517048,False,1.0593580985567988e-21,True,True
+threat_clause_flag,categorical,attribution,Chi-Square (2-group),7.740728003485566,0.05084696151018425,False,0.005614859184622738,True,False
+quoted_reply_flag,categorical,attribution,Chi-Square (2-group),0.0,0.0,True,1.0,False,False
+signoff_flag,categorical,attribution,Chi-Square (2-group),2781.8970329423187,0.9639280707770871,True,0.0,True,True
+allcaps_word_flag,categorical,attribution,Chi-Square (2-group),234.75732624079893,0.28001653630003576,True,8.125113272022367e-53,True,True
+multiple_urls_flag,categorical,attribution,Chi-Square (2-group),27.04597073918943,0.0950441495329971,True,2.1523007336314711e-07,True,False

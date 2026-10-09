@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue}
+
+\title{\textbf{Final Feature List}\\[2pt]\large Detection and Attribution of AI-Generated and Human Written
+Phishing Emails from Legitimate Emails}
+\author{Mannan Bhardwaj -- 25BYB0013 \\ Bhoumik Singh Rajput -- 25BYB0120 \\[4pt]
+School of Computer Science Engineering and Information Systems}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Overview}
+The pipeline extracts \textbf{20 features} from each email, split across two parallel tracks by
+feature type. \textbf{14 continuous features} are screened with Kruskal-Wallis H (3-group:
+Legitimate vs.\ Human-Phishing vs.\ AI-Phishing) and, on the phishing-only subset, Mann-Whitney U
+(2-group attribution: Human-Phishing vs.\ AI-Phishing). \textbf{6 categorical/flag features} are
+screened with Chi-Square (3-group, and a 2-group attribution variant). Every raw $p$-value from
+both tracks is corrected jointly with Benjamini-Hochberg FDR, and every feature must also clear an
+effect-size floor (Cohen's $d \geq 0.20$ for continuous, Cram\'er's $V \geq 0.10$ for categorical)
+before it reaches the Naive Bayes classification stage. This document lists all 20 candidate
+features; which ones actually survive both gates on the full training set is determined by running
+the pipeline itself, not decided in advance.
+
+\section{Continuous Features (14) --- Kruskal-Wallis H / Mann-Whitney U}
+
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{@{}p{0.6cm}p{4.3cm}p{3.6cm}p{6.8cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Feature} & \textbf{Category} & \textbf{Description / lane} \\
+\midrule
+\endhead
+1 & Average token log-probability & Text Complexity & How predictable each word is under a language model; AI text tends to be more predictable (higher log-prob). Main track. \\
+2 & Sentence perplexity variance (burstiness) & Text Complexity & Variance of per-sentence perplexity; human writing is ``bursty'' (varies a lot), AI text is uniform. Main track. \\
+3 & Standard deviation of sentence length & Structure \& Syntax & Spread of sentence lengths within an email. Main track. \\
+4 & Maximum parse-tree depth & Structure \& Syntax & Deepest syntactic nesting found in the email. Main track. \\
+5 & Paragraph density & Structure \& Syntax & Paragraph breaks per 100 words. Main track. \\
+6 & Clause density & Structure \& Syntax & Linking words (``and'', ``because'', ``which'', \ldots) per sentence. Main track. \\
+7 & Orthographic error density & Language Mechanics & Spelling/typo flags per 100 words. Main track. \\
+8 & Punctuation distribution entropy & Language Mechanics & Shannon entropy over punctuation-mark frequencies. Main track. \\
+9 & Urgency-keyword density & Communication Style & Urgency words (``urgent'', ``immediately'', ``asap'', \ldots) per 100 words. Main \textbf{and} attribution track. \\
+10 & Pronoun balance (1st:2nd person ratio) & Communication Style & Ratio of first-person to second-person pronoun counts. Main track. \\
+11 & Sentiment variance across sentences & Communication Style & Variance of per-sentence sentiment polarity. Main track. \\
+12 & Imperative verb density & Communication Style & Command verbs (``click'', ``verify'', ``submit'', \ldots) per 100 words. Main \textbf{and} attribution track --- the strongest attribution signal in the feature set. \\
+13 & Lexical diversity (type-token ratio) & Lexical Richness & Unique words $\div$ total words. Main track. \\
+14 & Pronoun density (overall) & Lexical Richness & Share of all words that are any pronoun (distinct from \#10's first:second-person ratio). Main track. \\
+\bottomrule
+\end{longtable}
+
+\section{Categorical / Flag Features (6) --- Chi-Square}
+
+These six were validated directly against the 4,500-row training set (see Section 3) and are the
+first features to actually populate the Chi-Square branch of the pipeline, which was previously
+defined in the architecture but had no features assigned to it.
+
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{@{}p{0.6cm}p{4.0cm}p{9.7cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Feature} & \textbf{Description} \\
+\midrule
+\endhead
+15 & Generic greeting flag & ``Dear Valued Customer / Dear User'' style opening vs.\ a named greeting. \\
+16 & Subject RE:/FW: flag & Subject line starts with a reply/forward marker. \\
+17 & Attachment-mention flag & Email references an attached file. \\
+18 & Bracketed call-to-action flag & A bracketed action phrase, e.g.\ \texttt{[Click Here]}, \texttt{[Verify Now]}. \\
+19 & Sensitive-info-request flag & Email asks for a password, SSN, card number, CVV, or PIN. \\
+20 & Threat/consequence-clause flag & Email threatens account suspension, closure, or restriction. \\
+\bottomrule
+\end{longtable}
+
+\section{Validation on the training set}
+Each categorical feature was tested with a real $\chi^2$ test of independence on the 4{,}500-row
+balanced training set (1{,}500 Legitimate / 1{,}500 Human-Phishing / 1{,}500 AI-Phishing), both as
+a 3-group test and restricted to the phishing-only subset for attribution. A feature is marked as
+clearing the pipeline's gate only where adjusted $p<0.05$ \textbf{and} Cram\'er's $V \geq 0.10$.
+
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{@{}p{3.6cm}rrrccrrrc@{}}
+\toprule
+& \multicolumn{3}{c}{\textbf{3-group (main)}} & & & \multicolumn{3}{c}{\textbf{2-group (attribution)}} & \\
+\textbf{Feature} & $\chi^2$ & $p$ & $V$ & \textbf{Gate} & & $\chi^2$ & $p$ & $V$ & \textbf{Gate} \\
+\midrule
+\endhead
+Generic greeting           & 1759.7 & $\approx\!0$        & 0.625 & \checkmark & & 847.4 & $\approx\!0$        & 0.531 & \checkmark \\
+Subject RE:/FW:            & 1192.0 & $\approx\!0$        & 0.515 & \checkmark & & 69.6  & $7.1\times10^{-17}$ & 0.152 & \checkmark$^{*}$ \\
+Sensitive-info request     & 154.7  & $2.6\times10^{-34}$ & 0.185 & \checkmark & & 20.9  & $4.9\times10^{-6}$  & 0.083 & \textbf{fails} \\
+Attachment mention         & 147.6  & $8.9\times10^{-33}$ & 0.181 & \checkmark & & 53.5  & $2.5\times10^{-13}$ & 0.134 & \checkmark \\
+Threat/consequence clause  & 146.2  & $1.8\times10^{-32}$ & 0.180 & \checkmark & & 19.1  & $1.3\times10^{-5}$  & 0.080 & \textbf{fails} \\
+Bracketed CTA               & 130.7  & $4.2\times10^{-29}$ & 0.170 & \checkmark & & 83.4  & $6.9\times10^{-20}$ & 0.167 & \checkmark \\
+\bottomrule
+\end{longtable}
+
+\vspace{-4pt}
+\noindent\small $^{*}$\textit{Caveat}: in the training corpus, 0.0\% of AI-Phishing subjects start
+with RE:/FW: (not merely rare --- exactly zero across all 1{,}500 rows), most likely an artifact of
+the fixed generation pretexts used to build the AI-Phishing corpus rather than an inherent property
+of AI-generated phishing. The Legitimate-vs-Phishing separation this feature captures is still
+genuine; the Human-vs-AI split should not be over-claimed as general in the written-up results.
+
+\medskip
+\noindent\textbf{Result:} 4 of 6 categorical features clear both gates for both the main and
+attribution tasks. Sensitive-info-request and threat/consequence-clause clear the main-task gate
+(they do help separate Legitimate from Phishing) but fall under the effect-size floor for
+attribution specifically --- statistically significant due to sample size, but too small an effect
+to use for telling Human-Phishing and AI-Phishing apart.
+
+\section{Full combined list}
+\begin{enumerate}
+\setlength\itemsep{2pt}
+\item Average token log-probability
+\item Sentence perplexity variance (burstiness)
+\item Standard deviation of sentence length
+\item Maximum parse-tree depth
+\item Paragraph density
+\item Clause density
+\item Orthographic error density
+\item Punctuation distribution entropy
+\item Urgency-keyword density
+\item Pronoun balance (1st:2nd person ratio)
+\item Sentiment variance across sentences
+\item Imperative verb density
+\item Lexical diversity (type-token ratio)
+\item Pronoun density (overall)
+\item Generic greeting flag
+\item Subject RE:/FW: flag
+\item Attachment-mention flag
+\item Bracketed call-to-action flag
+\item Sensitive-info-request flag
+\item Threat/consequence-clause flag
+\end{enumerate}
+
+\end{document}

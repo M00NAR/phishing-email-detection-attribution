@@ -25,6 +25,7 @@ produce. There are no nested subfolders — keep it that way.
 
 | Folder | Purpose |
 |---|---|
+| `00_onboarding/` | `HANDOUT.md` (new-collaborator guide) and `AGENTS.md` (rules for AI agents) |
 | `01_data_cleaning/` | Build training/holdout CSVs from the raw corpora |
 | `02_feature_extraction/` | Compute the 26 linguistic/statistical features per email |
 | `03_statistical_tests/` | Hypothesis-test feature selection gate → `locked_features_*.json` |

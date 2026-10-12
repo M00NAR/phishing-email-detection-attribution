@@ -1,7 +1,13 @@
 Phishing Detection & Attribution Paper — Project Files
 Mannan Bhardwaj (25BYB0013) & Bhoumik Singh Rajput (25BYB0120)
 
+New here? Start with 00_onboarding/HANDOUT.md (AI agents: 00_onboarding/AGENTS.md).
+
 Folders are in pipeline order:
+
+00_onboarding/
+  - HANDOUT.md -> project overview, results, setup and open tasks for new collaborators
+  - AGENTS.md  -> rules and repo map for AI coding agents
 
 01_data_cleaning/
   Scripts that build the training/holdout datasets (Nazario + Enron + AI-generated +
